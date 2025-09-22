@@ -10,6 +10,8 @@
 
 [🌐 useragent.wtf](https://useragent.wtf) • [📚 Documentation](./production-VMs/README.md) • [🐳 Docker Hub](https://hub.docker.com/u/scrapedat)
 
+[🤝 Contributing](./CONTRIBUTING.md) • [📋 Code of Conduct](./CODE_OF_CONDUCT.md) • [🔒 Security](./SECURITY.md)
+
 </div>
 
 ---
