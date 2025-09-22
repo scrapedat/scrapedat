@@ -1,4 +1,4 @@
-# 🤖 AI Scraper System - Corporate Exploitation Proof
+# 🤖 AI Scraper System
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 ![AGPL-3.0](https://img.shields.io/badge/License-AGPL_3.0-4CAF50?style=for-the-badge&logo=gnu&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-**🛡️ Protected Against Big Tech • 🚀 Production Ready • 🌐 Open Source**
+**🛡️ Production Ready • 🌐 Open Source**
 
 [🌐 useragent.wtf](https://useragent.wtf) • [📚 Documentation](./production-VMs/README.md) • [🐳 Docker Hub](https://hub.docker.com/u/scrapedat)
 
