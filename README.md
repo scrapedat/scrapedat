@@ -60,6 +60,43 @@ An **intelligent web scraping platform** that combines AI-powered analysis with 
                                └───────────────────┘
 ```
 
+
+
+graph TB
+    subgraph Dashboard["Dashboard 💻"]
+        dash["React/Electron + TypeScript<br/>• Real-time UI<br/>• Desktop App"]
+    end
+
+    subgraph AIScraper["AI Scraper VM 🤖"]
+        ai["Python<br/>• DNA Analysis<br/>• Browser VMs<br/>• Extensions"]
+    end
+
+    subgraph FrankensteinDB["FrankensteinDB 👹"]
+        db["Hybrid DB ⚡<br/>{o}&nbsp;&nbsp;&nbsp;{o}<br/>\\=|=/<br/>• 46K+ writes/s<br/>• <0.4ms query<br/>• 90% compression"]
+    end
+
+    subgraph GitHubRegistry["GitHub Registry 📦"]
+        git["Free & Public<br/>• ghcr.io<br/>• Unlimited"]
+    end
+
+    Dashboard --"MQTT ↔️"--> AIScraper
+    AIScraper --"Direct ↔️"--> FrankensteinDB
+    Dashboard --- GitHubRegistry
+    FrankensteinDB --- GitHubRegistry
+
+    classDef robot fill:#d8f0f0,stroke:#333,stroke-width:2px;
+    classDef monster fill:#f0d8d8,stroke:#333,stroke-width:2px;
+    classDef dashboard fill:#d8d8f0,stroke:#333,stroke-width:2px;
+    classDef registry fill:#f0f0d8,stroke:#333,stroke-width:2px;
+
+    class AIScraper robot;
+    class FrankensteinDB monster;
+    class Dashboard dashboard;
+    class GitHubRegistry registry;
+
+
+
+
 ---
 
 ## 📦 Quick Deploy
