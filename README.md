@@ -1,4 +1,4 @@
-# 🤖 AI Scraper System
+# 🤖 AI Scraper System - Intelligent Web Automation
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 ![AGPL-3.0](https://img.shields.io/badge/License-AGPL_3.0-4CAF50?style=for-the-badge&logo=gnu&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-**🛡️ Production Ready • 🌐 Open Source**
+** Production Ready • 🌐 Open Source • 🛡️ Community Protected**
 
 [🌐 useragent.wtf](https://useragent.wtf) • [📚 Documentation](./production-VMs/README.md) • [🐳 Docker Hub](https://hub.docker.com/u/scrapedat)
 
@@ -16,12 +16,12 @@
 
 ## 🔥 What is AI Scraper System?
 
-An **intelligent web scraping platform** that combines AI-powered analysis with distributed browser automation. Built to be **corporate exploitation proof** through AGPL-3.0 licensing.
+An **intelligent web scraping platform** that combines AI-powered analysis with distributed browser automation. Built with **AGPL-3.0 licensing** to ensure it remains free and open for the community.
 
-### 🚫 Corporate Protection
-- **AGPL-3.0 Licensed**: Forces any SaaS deployment to open-source their entire platform
-- **Big Tech Immune**: Amazon, Google, Meta cannot commercially exploit this code
-- **Community Owned**: Stays free and open forever
+### �️ Community Protection
+- **AGPL-3.0 Licensed**: Ensures any commercial deployment shares source code
+- **Community Owned**: Stays free and accessible forever
+- **Open Source**: Transparent and collaborative development
 
 ### ⚡ Key Features
 - **🧠 AI-Powered Analysis**: Website DNA fingerprinting and intelligent scraping
@@ -80,20 +80,22 @@ cd production-vms
 
 ---
 
-## 🛡️ AGPL-3.0 Protection Details
+---
 
-### What Big Tech Cannot Do:
-- ❌ **Amazon** cannot embed in AWS services without open-sourcing AWS
-- ❌ **Google** cannot use in Cloud Platform without open-sourcing GCP
-- ❌ **Meta** cannot integrate without open-sourcing their entire platform
-- ❌ **Microsoft** cannot deploy as Azure service without open-sourcing Azure
-- ❌ **Any corporation** cannot create proprietary SaaS products
+## 🛡️ AGPL-3.0 License Benefits
 
 ### Why AGPL-3.0?
-- **Network Copyleft**: Requires source code sharing for network services
-- **SaaS Protection**: Forces cloud deployments to be open source
-- **Corporate Deterrent**: Big tech avoids AGPL because it destroys their business model
+- **Network Copyleft**: Ensures source code sharing for network services
+- **SaaS Transparency**: Cloud deployments must remain open source
 - **Community Protection**: Keeps the software free and accessible
+- **Collaborative Development**: Encourages contribution and improvement
+- **Long-term Freedom**: Prevents proprietary lock-in
+
+### License Advantages:
+- **Free Distribution**: Can be used, modified, and shared freely
+- **Source Access**: Always available for inspection and improvement
+- **Community Driven**: Open development and collaboration
+- **Future Proof**: Protected against commercial exploitation
 
 ---
 
@@ -106,7 +108,7 @@ cd production-vms
 | FrankensteinDB | Compression | 90%+ data reduction |
 | AI Scraper VM | Browser Instances | Scalable Docker containers |
 | Dashboard | UI Framework | React + TypeScript + Tailwind |
-| System | License | AGPL-3.0 (Corporate Proof) |
+| System | License | AGPL-3.0 (Community Protected) |
 
 ---
 
@@ -168,15 +170,15 @@ We welcome contributions! All code must remain AGPL-3.0 licensed.
 ### Code of Conduct:
 - Respect the AGPL-3.0 license
 - Keep the software free and open
-- Protect against corporate exploitation
-- Support the open-source community
+- Support collaborative development
+- Build for the open-source community
 
 ---
 
 ## 📞 Contact & Community
 
 - **🌐 Website**: [useragent.wtf](https://useragent.wtf)
-- **📧 Email**: ai-scraper@scrapedat.com
+- **📧 Email**: brian@useragent.id
 - **🐛 Issues**: [GitHub Issues](https://github.com/scrapedat/production-vms/issues)
 - **💬 Discussions**: [GitHub Discussions](https://github.com/scrapedat/production-vms/discussions)
 
