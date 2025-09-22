@@ -43,8 +43,8 @@ An **intelligent web scraping platform** that combines AI-powered analysis with 
 │  (React/Electron│             │  VM (Python)    │               │  (Hybrid DB)    │
 │   + TypeScript) │             │                 │               │                 │
 │                 │             │  • DNA Analysis │               │  • 46K+ writes/s│
-│  • Real-time UI │             │  • Browser VMs  │               │  • <0.4ms query │
-│  • Desktop App  │             │  • Extensions   │               │  • 90% compression│
+│  • Real-time UI │             │  • Browser VMs  │               │ • <0.4ms query  │
+│  • Desktop App  │             │  • Extensions   │               │• 90% compression│
 └─────────────────┘             └─────────────────┘               └─────────────────┘
         │                                │                                │
         └────────────────────────────────┼────────────────────────────────┘
