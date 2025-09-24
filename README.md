@@ -43,8 +43,8 @@ An **intelligent web scraping platform** that combines AI-powered analysis with 
 │  (React/Electron│             │  VM (Python)    │               │  (Hybrid DB)    │
 │   + TypeScript) │             │                 │               │                 │
 │                 │             │  • DNA Analysis │               │  • 46K+ writes/s│
-│  • Real-time UI │             │  • Browser VMs  │               │  • <0.4ms query │
-│  • Desktop App  │             │  • Extensions   │               │  • 90% compression│
+│  • Real-time UI │             │  • Browser VMs  │               │ • <0.4ms query  │
+│  • Desktop App  │             │  • Extensions   │               │• 90% compression│
 └─────────────────┘             └─────────────────┘               └─────────────────┘
         │                                │                                │
         └────────────────────────────────┼────────────────────────────────┘
@@ -59,6 +59,28 @@ An **intelligent web scraping platform** that combines AI-powered analysis with 
                                │  • AGPL Protected │
                                └───────────────────┘
 ```
+
+flowchart TD
+    classDef frankenstein fill:#483D8B,stroke:#000,color:white,stroke-width:2px
+    classDef robot fill:#696969,stroke:#000,color:white,stroke-width:2px
+    classDef dashboard fill:#4682B4,stroke:#000,color:white,stroke-width:2px
+    classDef registry fill:#708090,stroke:#000,color:white,stroke-width:2px
+
+    Dashboard["Dashboard<br/>(React/Electron + TypeScript)<br/><br/>• Real-time UI<br/>• Desktop App"] 
+    
+    AIScraper["AI Scraper VM 🤖<br/>(Python)<br/><br/>• DNA Analysis ⚙️<br/>• Browser VMs 🔍<br/>• Extensions 🧠<br/><br/>(&lt;[°_°]&gt;)"]:::robot
+    
+    FrankensteinDB["FrankensteinDB<br/><br/>• 46K+ writes/s ⚡<br/>• &lt;0.4ms query ⚡<br/>• 90% compression ⚡<br/><br/>/-[ಠ,,ಠ]-\\<br/>|..&lt;||&gt;..|<br/>\\...⚡.../<br/>(Hybrid DB)"]:::frankenstein
+    
+    GitHubRegistry["GitHub Registry<br/>(Free & Public)<br/><br/>• ghcr.io<br/>• Unlimited<br/><br/>📦"]:::registry
+    
+    Dashboard <-->|MQTT| AIScraper
+    AIScraper <-->|Direct| FrankensteinDB
+    Dashboard -->|Direct| FrankensteinDB
+    
+    AIScraper --> GitHubRegistry
+    FrankensteinDB --> GitHubRegistry
+    Dashboard --> GitHubRegistry
 
 ---
 
