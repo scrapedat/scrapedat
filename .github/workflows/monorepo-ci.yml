@@ -1,0 +1,240 @@
+name: Monorepo CI/CD
+
+on:
+  push:
+    branches: [ main, production ]
+  pull_request:
+    branches: [ main, production ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Test all components
+  test-components:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [frankenstein-db, ai-scraper-vm, ai-scraper-dashboard]
+
+    steps:
+    - name: Checkout monorepo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'ai-scraper-dashboard/package-lock.json'
+
+    - name: Start Redis for testing
+      uses: supercharge/redis-github-action@1.7.0
+      with:
+        redis-version: 7
+
+    - name: Test frankenstein-db
+      if: matrix.component == 'frankenstein-db'
+      run: |
+        cd frankenstein-db
+        pip install -r requirements.txt
+        python test_scraping_config.py
+
+    - name: Test ai-scraper-vm
+      if: matrix.component == 'ai-scraper-vm'
+      run: |
+        cd ai-scraper-vm
+        pip install -r requirements.txt
+        python -c "from src.orchestrator import AIScraperOrchestrator; print('✅ Import successful')"
+
+    - name: Test ai-scraper-dashboard
+      if: matrix.component == 'ai-scraper-dashboard'
+      run: |
+        cd ai-scraper-dashboard
+        npm ci
+        npm run build
+
+  # Build and push Docker images
+  build-and-push:
+    needs: test-components
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        component: [frankenstein-db, ai-scraper-vm, ai-scraper-dashboard]
+        include:
+        - component: frankenstein-db
+          context: ./frankenstein-db
+          dockerfile: ./frankenstein-db/Dockerfile
+        - component: ai-scraper-vm
+          context: ./ai-scraper-vm
+          dockerfile: ./ai-scraper-vm/Dockerfile
+        - component: ai-scraper-dashboard
+          context: ./ai-scraper-dashboard
+          dockerfile: ./ai-scraper-dashboard/Dockerfile
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.component }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.context }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Deploy to staging/production
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+      url: ${{ secrets.DEPLOY_URL }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo '${{ secrets.SSH_PRIVATE_KEY }}' > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to ${{ github.event.inputs.environment || 'staging' }}
+      run: |
+        ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+        echo "🚀 Deploying to $ENVIRONMENT environment"
+
+        # Deploy frankenstein-db
+        echo "📦 Deploying frankenstein-db..."
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frankenstein-db:latest
+          docker stop frankenstein-db-$ENVIRONMENT || true
+          docker rm frankenstein-db-$ENVIRONMENT || true
+          docker run -d --name frankenstein-db-$ENVIRONMENT \\
+            --network ai-scraper-network \\
+            -e REDIS_HOST=redis \\
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frankenstein-db:latest
+        "
+
+        # Deploy ai-scraper-vm
+        echo "🤖 Deploying ai-scraper-vm..."
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/ai-scraper-vm:latest
+          docker stop ai-scraper-vm-$ENVIRONMENT || true
+          docker rm ai-scraper-vm-$ENVIRONMENT || true
+          docker run -d --name ai-scraper-vm-$ENVIRONMENT \\
+            --network ai-scraper-network \\
+            -e MQTT_BROKER_HOST=mqtt-broker \\
+            -e REDIS_HOST=redis \\
+            -e OLLAMA_HOST=ollama \\
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/ai-scraper-vm:latest
+        "
+
+        # Deploy ai-scraper-dashboard
+        echo "📊 Deploying ai-scraper-dashboard..."
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/ai-scraper-dashboard:latest
+          docker stop ai-scraper-dashboard-$ENVIRONMENT || true
+          docker rm ai-scraper-dashboard-$ENVIRONMENT || true
+          docker run -d --name ai-scraper-dashboard-$ENVIRONMENT \\
+            --network ai-scraper-network \\
+            -p 3000:3000 \\
+            -e API_BASE_URL=http://ai-scraper-vm-$ENVIRONMENT:8000 \\
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/ai-scraper-dashboard:latest
+        "
+
+        echo "✅ Deployment to $ENVIRONMENT completed!"
+
+    - name: Run health checks
+      run: |
+        ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+        echo "🔍 Running health checks for $ENVIRONMENT..."
+
+        # Wait for services to be ready
+        sleep 30
+
+        # Check frankenstein-db health
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          if docker ps | grep -q frankenstein-db-$ENVIRONMENT; then
+            echo '✅ frankenstein-db: Running'
+          else
+            echo '❌ frankenstein-db: Not running'
+            exit 1
+          fi
+        "
+
+        # Check ai-scraper-vm health
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          if docker ps | grep -q ai-scraper-vm-$ENVIRONMENT; then
+            echo '✅ ai-scraper-vm: Running'
+          else
+            echo '❌ ai-scraper-vm: Not running'
+            exit 1
+          fi
+        "
+
+        # Check ai-scraper-dashboard health
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+          if docker ps | grep -q ai-scraper-dashboard-$ENVIRONMENT; then
+            echo '✅ ai-scraper-dashboard: Running'
+          else
+            echo '❌ ai-scraper-dashboard: Not running'
+            exit 1
+          fi
+        "
+
+        echo "🎉 All services are healthy in $ENVIRONMENT!"
+
+    - name: Notify deployment success
+      run: |
+        ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+        curl -X POST -H 'Content-type: application/json' \\
+          --data "{\"text\":\"🚀 AI Scraper System deployed to $ENVIRONMENT successfully!\"}" \\
+          ${{ secrets.SLACK_WEBHOOK }} || true

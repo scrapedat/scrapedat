@@ -1,0 +1,184 @@
+name: Release & Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GH_PAT }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        pip install semantic-release python-semantic-release
+        npm install -g semantic-release @semantic-release/changelog @semantic-release/git
+
+    - name: Determine version bump
+      id: version
+      run: |
+        if [ "${{ github.event.inputs.version }}" = "major" ]; then
+          echo "bump=major" >> $GITHUB_OUTPUT
+        elif [ "${{ github.event.inputs.version }}" = "minor" ]; then
+          echo "bump=minor" >> $GITHUB_OUTPUT
+        else
+          echo "bump=patch" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create release
+      run: |
+        # Update version in all components
+        VERSION=$(semantic-release --dry-run | grep "next release version" | cut -d' ' -f4)
+
+        # Update frankenstein-db version
+        sed -i "s/version=\".*\"/version=\"$VERSION\"/" frankenstein-db/setup.py
+
+        # Update ai-scraper-vm version (if applicable)
+        # Update ai-scraper-dashboard version
+        cd ai-scraper-dashboard
+        npm version $VERSION --no-git-tag-version
+        cd ..
+
+        # Commit version changes
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "chore: bump version to $VERSION" || true
+
+    - name: Build Python packages
+      run: |
+        cd frankenstein-db
+        python -m pip install --upgrade build twine
+        python -m build
+        twine check dist/*
+
+    - name: Build Node.js packages
+      run: |
+        cd ai-scraper-dashboard
+        npm ci
+        npm run build
+        npm pack
+
+    - name: Publish to PyPI
+      if: github.event_name == 'release'
+      run: |
+        cd frankenstein-db
+        twine upload dist/* \
+          --username __token__ \
+          --password ${{ secrets.PYPI_API_TOKEN }}
+
+    - name: Publish to NPM
+      if: github.event_name == 'release'
+      run: |
+        cd ai-scraper-dashboard
+        npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Publish Docker images
+      if: github.event_name == 'release'
+      run: |
+        # Login to registries
+        echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+        # Build and push multi-arch images
+        VERSION=$(cat frankenstein-db/setup.py | grep "version=" | cut -d'"' -f2)
+
+        # FrankensteinDB
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          -t scrapedat/frankenstein-db:$VERSION \
+          -t scrapedat/frankenstein-db:latest \
+          -t ghcr.io/${{ github.repository }}/frankenstein-db:$VERSION \
+          -t ghcr.io/${{ github.repository }}/frankenstein-db:latest \
+          --push ./frankenstein-db
+
+        # AI Scraper VM
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          -t scrapedat/ai-scraper-vm:$VERSION \
+          -t scrapedat/ai-scraper-vm:latest \
+          -t ghcr.io/${{ github.repository }}/ai-scraper-vm:$VERSION \
+          -t ghcr.io/${{ github.repository }}/ai-scraper-vm:latest \
+          --push ./ai-scraper-vm
+
+        # Dashboard
+        docker buildx build --platform linux/amd64,linux/arm64 \
+          -t scrapedat/ai-scraper-dashboard:$VERSION \
+          -t scrapedat/ai-scraper-dashboard:latest \
+          -t ghcr.io/${{ github.repository }}/ai-scraper-dashboard:$VERSION \
+          -t ghcr.io/${{ github.repository }}/ai-scraper-dashboard:latest \
+          --push ./ai-scraper-dashboard
+
+    - name: Create GitHub release
+      if: github.event_name == 'release'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## 🎉 AI Scraper System v${{ github.event.release.tag_name }}
+
+          ### 📦 What's New
+          - FrankensteinDB: Intelligent web fingerprinting database
+          - AI Scraper VM: Distributed browser automation
+          - Dashboard: Real-time monitoring and control
+
+          ### 🐳 Docker Images
+          ```bash
+          docker pull scrapedat/frankenstein-db:latest
+          docker pull scrapedat/ai-scraper-vm:latest
+          docker pull scrapedat/ai-scraper-dashboard:latest
+          ```
+
+          ### 📚 Documentation
+          - [Installation Guide](./production-VMs/README.md)
+          - [API Documentation](./docs/)
+          - [Contributing Guidelines](./CONTRIBUTING.md)
+
+          ### 🔒 Security
+          - All dependencies scanned for vulnerabilities
+          - AGPL-3.0 licensed for community protection
+          - Regular security updates
+
+          ---
+          **Full Changelog**: [Compare releases](https://github.com/${{ github.repository }}/compare/v${{ github.event.release.tag_name }}...main)
+        draft: false
+        prerelease: false
+
+    - name: Notify release
+      run: |
+        VERSION=$(cat frankenstein-db/setup.py | grep "version=" | cut -d'"' -f2)
+        curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"🚀 AI Scraper System v$VERSION released! https://github.com/${{ github.repository }}/releases/tag/v$VERSION\"}" \
+          ${{ secrets.SLACK_WEBHOOK }} || true
